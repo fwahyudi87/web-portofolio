@@ -35,4 +35,4 @@ npm run build
 npm start
 ```
 
-Personal Web Portofolio
+Personal Web Portfolio
