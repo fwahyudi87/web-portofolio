@@ -1,0 +1,12 @@
+{
+  "name": "fwi-porto-web",
+  "version": "1.0.0",
+  "description": "Wahyudi's Portfolio Web Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
