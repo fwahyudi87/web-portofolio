@@ -27,6 +27,7 @@
 
     <main>
         <section id="hero" class="hero">
+            <canvas id="hero-network" aria-hidden="true"></canvas>
             <div class="hero-content">
                 <div class="hero-decor">
                     <span class="dot"></span>
@@ -404,6 +405,69 @@
             el.classList.add('fade-in');
             observer.observe(el);
         });
+
+        (function () {
+            var canvas = document.getElementById('hero-network');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var TERMS = ['Go','Python','Docker','PostgreSQL','Redis','gRPC','Linux','Proxmox','Kubernetes','Nginx','GraphQL','Rust','Laravel','MySQL','MikroTik','Fiber','Zig','REST','Kasirku','Multipay','TapOnBus','Parkour'];
+            var COLORS = ['#22D3EE','#4ADE80','#FB923C'];
+            var NUM = TERMS.length;
+            var w = 0, h = 0, dpr = 1, R = 300, FOCAL = 620;
+            var angleY = 0, angleX = 0.42;
+            var nodes = [], edges = [];
+
+            function rand(a,b){return a+Math.random()*(b-a);}
+            for(var i=0;i<NUM;i++){
+                var th = Math.random()*Math.PI*2, ph = Math.acos(rand(-1,1));
+                nodes.push({ux:Math.sin(ph)*Math.cos(th), uy:Math.sin(ph)*Math.sin(th)*0.62, uz:Math.cos(ph), label:TERMS[i], color:COLORS[i%3], tw:Math.random()*Math.PI*2, px:0, py:0, ps:1, rz:0});
+            }
+            for(var a=0;a<nodes.length;a++){
+                var dist=[]; for(var b=0;b<nodes.length;b++){
+                    if(a===b)continue; var dx=nodes[a].ux-nodes[b].ux, dy=nodes[a].uy-nodes[b].uy, dz=nodes[a].uz-nodes[b].uz;
+                    dist.push({j:b,d:Math.sqrt(dx*dx+dy*dy+dz*dz)});
+                }
+                dist.sort((x,y)=>x.d-y.d); for(var m=0;m<(2+a%2);m++){var j=dist[m].j; if(a<j)edges.push([a,j]);}
+            }
+
+            function resize(){
+                dpr = Math.min(window.devicePixelRatio||1,2); var rect=canvas.getBoundingClientRect();
+                w=rect.width||canvas.parentElement.clientWidth; h=rect.height||canvas.parentElement.clientHeight;
+                canvas.width=w*dpr; canvas.height=h*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); R=Math.min(w,h)*0.46;
+            }
+            function ry(x,z,ang){var c=Math.cos(ang),s=Math.sin(ang); return{x:x*c-z*s,z:x*s+z*c};}
+            function rx(y,z,ang){var c=Math.cos(ang),s=Math.sin(ang); return{y:y*c-z*s,z:y*s+z*c};}
+            function h2rgb(h){var n=parseInt(h.slice(1),16); return[(n>>16)&255,(n>>8)&255,n&255];}
+            function frame(t){
+                if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches) angleY+=0.0026;
+                ctx.clearRect(0,0,w,h);
+                var zs=[]; for(var i=0;i<nodes.length;i++){
+                    var n=nodes[i], bob=Math.sin(t*0.0006+n.tw)*0.04, rr=R*(1+bob);
+                    var x=n.ux*rr,y=n.uy*rr,z=n.uz*rr;
+                    var r=ry(x,z,angleY); x=r.x;z=r.z; r=rx(y,z,angleX); y=r.y;z=r.z; var s=FOCAL/(FOCAL-z);
+                    n.px=w/2+x*s; n.py=h/2+y*s; n.ps=s; n.rz=z; zs.push(z);
+                }
+                var zMin=Math.min.apply(null,zs), zMax=Math.max.apply(null,zs), zR=zMax-zMin||1;
+                ctx.lineWidth=1; for(var e=0;e<edges.length;e++){
+                    var na=nodes[edges[e][0]], nb=nodes[edges[e][1]];
+                    var d=((na.rz+nb.rz)/2-zMin)/zR, a=0.05+d*0.30, rgb=h2rgb(na.color);
+                    ctx.strokeStyle='rgba('+rgb[0]+','+rgb[1]+','+rgb[2]+','+a+')';
+                    ctx.beginPath(); ctx.moveTo(na.px,na.py); ctx.lineTo(nb.px,nb.py); ctx.stroke();
+                }
+                ctx.textAlign='center'; ctx.textBaseline='middle';
+                for(var i=0;i<nodes.length;i++){
+                    var n=nodes[i], d=(n.rz-zMin)/zR, rad=(2.4+d*2.6)*n.ps;
+                    var g=ctx.createRadialGradient(n.px,n.py,0,n.px,n.py,rad*4);
+                    g.addColorStop(0,n.color); g.addColorStop(1,'rgba(0,0,0,0)');
+                    ctx.globalAlpha=0.45; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(n.px,n.py,rad*4,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
+                    ctx.fillStyle=n.color; ctx.beginPath(); ctx.arc(n.px,n.py,rad,0,Math.PI*2); ctx.fill();
+                    if(d>0.32){ var f=Math.max(9,12*n.ps*(0.7+d*0.5)); ctx.font='500 '+f.toFixed(1)+'px JetBrains Mono,monospace'; ctx.fillStyle='rgba(244,244,245,'+(0.5+d*0.45).toFixed(2)+')'; ctx.fillText(n.label,n.px,n.py-rad-f*0.9);}
+                }
+                requestAnimationFrame(frame);
+            }
+            resize(); requestAnimationFrame(frame);
+            var rt; window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(resize,150);});
+        })();
     </script>
 </body>
 </html>
