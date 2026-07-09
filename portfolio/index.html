@@ -380,6 +380,13 @@
             });
         });
 
+        const navHeader = document.querySelector('.nav-header');
+        const onScroll = () => {
+            navHeader.classList.toggle('scrolled', window.scrollY > 24);
+        };
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+
         const observerOptions = {
             threshold: 0.1,
             rootMargin: '0px 0px -50px 0px'
